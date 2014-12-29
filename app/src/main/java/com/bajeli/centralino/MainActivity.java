@@ -11,9 +11,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.ParcelUuid;
+import android.os.SystemClock;
 import android.provider.CallLog.Calls;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -22,6 +24,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+
+import android.provider.Settings;
+import android.app.PendingIntent;
+import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	public static String TAG = "MainAct";
@@ -32,9 +42,14 @@ public class MainActivity extends Activity {
 	public static UUID  APRIPORTA_UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
 	public static String deviceName="BluetoothBee";
 	static ConnectThread connectedDevice;
-	
-	
-	@Override
+    private static final long POINT_RADIUS = 200; // in Meters
+    private static final double latitude=37.541245;
+    private static final double longitude=15.106205;
+    LocationManager locationManager;
+    Intent intent ;
+    PendingIntent pendingIntent ;
+
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
@@ -85,8 +100,68 @@ public class MainActivity extends Activity {
 		mBluetoothAdapter.startDiscovery();
 		Log.d(TAG,"mBluetoothAdapter laubched");
 		*/
-		//ConnectThread 
-	}
+		//ConnectThread
+
+
+
+        // new for location
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        boolean enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        // check if enabled and if not send user to the GSP settings
+        // Better solution would be to display a dialog and suggesting to
+        // go to the settings
+        if (!enabled) {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            startActivity(intent);
+        }
+        //Receiver for location change
+        intent = new Intent(this,LocationReceiver.class);
+        pendingIntent = PendingIntent.getService(this, 0, intent, 0);
+
+        locationManager.addProximityAlert(latitude , longitude , POINT_RADIUS, -1, pendingIntent);
+
+
+        //TODO mock positions
+        setMockLocation(locationManager,37.541245,15.106205,20);
+        setMockLocation(locationManager, 37.6,15.11,20);
+    }
+
+
+    private void setMockLocation(LocationManager lm,double latitude, double longitude, float accuracy) {
+        lm.addTestProvider (LocationManager.GPS_PROVIDER,
+                "requiresNetwork" == "",
+                "requiresSatellite" == "",
+                "requiresCell" == "",
+                "hasMonetaryCost" == "",
+                "supportsAltitude" == "",
+                "supportsSpeed" == "",
+                "supportsBearing" == "",
+                android.location.Criteria.POWER_LOW,
+                android.location.Criteria.ACCURACY_FINE);
+
+        Location newLocation = new Location(LocationManager.GPS_PROVIDER);
+
+        newLocation.setLatitude(latitude);
+        newLocation.setLongitude(longitude);
+        newLocation.setAccuracy(accuracy);
+        newLocation.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+
+        lm.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true);
+
+        lm.setTestProviderStatus(LocationManager.GPS_PROVIDER,
+                LocationProvider.AVAILABLE,
+                null,System.currentTimeMillis());
+
+        try {
+            lm.setTestProviderLocation(LocationManager.GPS_PROVIDER, newLocation);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+
 
 	private static void connectToBee(){
 		// elenco dei device accoppiati
