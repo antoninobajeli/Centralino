@@ -1,5 +1,6 @@
 package com.bajeli.centralino;
 
+import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,7 +34,7 @@ import android.provider.Settings;
 import android.app.PendingIntent;
 import android.widget.Toast;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements LocationListener {
 	public static String TAG = "MainAct";
 	static int REQUEST_ENABLE_BT=2;
 	
@@ -46,8 +47,7 @@ public class MainActivity extends Activity {
     private static final double latitude=37.541245;
     private static final double longitude=15.106205;
     LocationManager locationManager;
-    Intent intent ;
-    PendingIntent pendingIntent ;
+
 
     @Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -104,26 +104,51 @@ public class MainActivity extends Activity {
 
 
 
+
+
         // new for location
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        boolean enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+        //for debugging...
+        // allow notification on the MainActivity
+        //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 10, this);
+
 
         // check if enabled and if not send user to the GSP settings
         // Better solution would be to display a dialog and suggesting to
         // go to the settings
+        boolean enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         if (!enabled) {
             Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             startActivity(intent);
         }
-        //Receiver for location change
-        intent = new Intent(this,LocationReceiver.class);
-        pendingIntent = PendingIntent.getService(this, 0, intent, 0);
 
-        locationManager.addProximityAlert(latitude , longitude , POINT_RADIUS, -1, pendingIntent);
+
+
+
+        //i'm defining and registering the receiver for the notification
+        String ACTION_FILTER = "com.bajeli.centralino.";
+        registerReceiver(new LocationReceiver(), new IntentFilter(ACTION_FILTER));
+
+
+        //Setting up My Broadcast Intent
+        Intent i= new Intent(ACTION_FILTER);
+        PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), -1, i, 0);
+
+
+        // setting up locationManager in orther to FIRE the PendingIntent
+        locationManager.addProximityAlert(latitude , longitude , POINT_RADIUS, -1, pi);
+
+
 
 
         //TODO mock positions
         setMockLocation(locationManager,37.541245,15.106205,20);
+        setMockLocation(locationManager,37.54124,15.10620,20);
+        setMockLocation(locationManager,37.5412,15.1062,20);
+        setMockLocation(locationManager,37.541,15.106,20);
+        setMockLocation(locationManager,37.54,15.10,20);
+        setMockLocation(locationManager,37.5,15.1,20);
         setMockLocation(locationManager, 37.6,15.11,20);
     }
 
@@ -146,12 +171,14 @@ public class MainActivity extends Activity {
         newLocation.setLongitude(longitude);
         newLocation.setAccuracy(accuracy);
         newLocation.setElapsedRealtimeNanos(SystemClock.elapsedRealtimeNanos());
+        newLocation.setTime(SystemClock.elapsedRealtimeNanos());
 
         lm.setTestProviderEnabled(LocationManager.GPS_PROVIDER, true);
 
         lm.setTestProviderStatus(LocationManager.GPS_PROVIDER,
                 LocationProvider.AVAILABLE,
                 null,System.currentTimeMillis());
+
 
         try {
             lm.setTestProviderLocation(LocationManager.GPS_PROVIDER, newLocation);
@@ -279,5 +306,36 @@ public class MainActivity extends Activity {
 		
 		super.onDestroy();
 	}
-	
+
+
+
+
+
+    @Override
+    public void onLocationChanged(Location newLocation) {
+
+        Location old = new Location("OLD");
+        old.setLatitude(latitude);
+        old.setLongitude(longitude);
+
+        double distance = newLocation.distanceTo(old);
+
+        Log.i("onLocationChanged", "Distance: " + distance);
+
+    }
+
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+
+    }
 }
