@@ -47,6 +47,8 @@ public class MainActivity extends Activity implements LocationListener {
     private static final double latitude=37.541245;
     private static final double longitude=15.106205;
     LocationManager locationManager;
+    static int MODE=0; // 0 master centralino, 1 slaves remote
+
 
 
     @Override
@@ -105,51 +107,48 @@ public class MainActivity extends Activity implements LocationListener {
 
 
 
+        if (MODE==1) {
+            // new for location
+            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
-        // new for location
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-        //for debugging...
-        // allow notification on the MainActivity
-        //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 10, this);
+            //for debugging...
+            // allow notification on the MainActivity
+            //locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 10, this);
 
 
-        // check if enabled and if not send user to the GSP settings
-        // Better solution would be to display a dialog and suggesting to
-        // go to the settings
-        boolean enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
-        if (!enabled) {
-            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            startActivity(intent);
+            // check if enabled and if not send user to the GSP settings
+            // Better solution would be to display a dialog and suggesting to
+            // go to the settings
+            boolean enabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            if (!enabled) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+
+
+            //i'm defining and registering the receiver for the notification
+            String ACTION_FILTER = "com.bajeli.centralino.";
+            registerReceiver(new LocationReceiver(), new IntentFilter(ACTION_FILTER));
+
+
+            //Setting up My Broadcast Intent
+            Intent i = new Intent(ACTION_FILTER);
+            PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), -1, i, 0);
+
+
+            // setting up locationManager in orther to FIRE the PendingIntent
+            locationManager.addProximityAlert(latitude, longitude, POINT_RADIUS, -1, pi);
+
+
+            //TODO mock positions
+            setMockLocation(locationManager, 37.541245, 15.106205, 20);
+            setMockLocation(locationManager, 37.54124, 15.10620, 20);
+            setMockLocation(locationManager, 37.5412, 15.1062, 20);
+            setMockLocation(locationManager, 37.541, 15.106, 20);
+            setMockLocation(locationManager, 37.54, 15.10, 20);
+            setMockLocation(locationManager, 37.5, 15.1, 20);
+            setMockLocation(locationManager, 37.6, 15.11, 20);
         }
-
-
-
-
-        //i'm defining and registering the receiver for the notification
-        String ACTION_FILTER = "com.bajeli.centralino.";
-        registerReceiver(new LocationReceiver(), new IntentFilter(ACTION_FILTER));
-
-
-        //Setting up My Broadcast Intent
-        Intent i= new Intent(ACTION_FILTER);
-        PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), -1, i, 0);
-
-
-        // setting up locationManager in orther to FIRE the PendingIntent
-        locationManager.addProximityAlert(latitude , longitude , POINT_RADIUS, -1, pi);
-
-
-
-
-        //TODO mock positions
-        setMockLocation(locationManager,37.541245,15.106205,20);
-        setMockLocation(locationManager,37.54124,15.10620,20);
-        setMockLocation(locationManager,37.5412,15.1062,20);
-        setMockLocation(locationManager,37.541,15.106,20);
-        setMockLocation(locationManager,37.54,15.10,20);
-        setMockLocation(locationManager,37.5,15.1,20);
-        setMockLocation(locationManager, 37.6,15.11,20);
     }
 
 

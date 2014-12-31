@@ -23,6 +23,9 @@ public class ServiceReceiver extends BroadcastReceiver {
     	whiteListNumbers.add("+393470149386");//mamm
     	whiteListNumbers.add("+393454927178");//giani
     	whiteListNumbers.add("+393701302955");//tiziana
+        whiteListNumbers.add("+393478387938");//Paolo Vittoria
+        whiteListNumbers.add("+393405592036");//Vittoria
+
     	
     	
         PhoneStateListener phoneListener = new PhoneStateListener();
